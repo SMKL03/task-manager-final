@@ -1,65 +1,91 @@
-import Image from "next/image";
+import { FilterBar } from "@/components/FilterBar";
+import { db } from "@/lib/db";
+import { requireAuth } from "@/lib/auth-helpers";
+import TaskForm from "@/components/TaskForm";
+import { TaskList } from "@/components/TaskList";
+import { SearchBar } from "@/components/SearchBar";
+import { Pagination } from "@/components/Pagination";
+// 1. Tambahkan import untuk LogoutButton
+import { LogoutButton } from "@/components/LogoutButton";
 
-export default function Home() {
+interface PageProps {
+  searchParams: Promise<{
+    search?: string;
+    priority?: string;
+    completed?: string;
+    page?: string;
+  }>;
+}
+
+export default async function Home({ searchParams }: PageProps) {
+  // 1. Dapatkan user yang sedang login
+  const user = await requireAuth();
+
+  // 2. Ambil parameter dari URL
+  const params = await searchParams;
+  const page = Number(params.page) || 1;
+  const perPage = 5; // Kita buat 5 dulu agar fitur halamannya cepat terlihat!
+
+  // 3. Bangun query untuk Prisma
+  const where = {
+    userId: user.id, // WAJIB: Hanya ambil tugas milik user ini!
+    ...(params.search && {
+      OR: [
+        { title: { contains: params.search, mode: "insensitive" as const } },
+        { description: { contains: params.search, mode: "insensitive" as const } },
+      ],
+    }),
+    ...(params.priority && { priority: params.priority }),
+    ...(params.completed !== undefined && { completed: params.completed === "true" }),
+  };
+
+  // 4. Ambil data tugas & total jumlah tugas secara paralel (Lebih Cepat!)
+  const [tasks, totalTasks] = await Promise.all([
+    db.task.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * perPage,
+      take: perPage,
+    }),
+    db.task.count({ where }),
+  ]);
+
+  const totalPages = Math.ceil(totalTasks / perPage);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="max-w-4xl mx-auto py-10 px-4 sm:px-6">
+      {/* Header Info & Tombol Logout */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">My Workspace</h1>
+          <p className="text-slate-500 mt-1">Ditemukan {totalTasks} tugas yang sesuai.</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        
+        {/* Tombol Logout 1-Klik menggantikan tag <a> yang lama */}
+        <LogoutButton />
+      </div>
+
+      <div className="w-full h-px bg-slate-100 mb-8" />
+
+      {/* Form Tambah Tugas */}
+      <TaskForm />
+
+      <div className="w-full h-px bg-slate-100 my-10" />
+
+      {/* Area Navigasi (Search & Filter) */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <h2 className="text-lg font-bold text-slate-800 w-full sm:w-auto">Daftar Tugas</h2>
+        <div className="w-full sm:w-auto flex gap-3">
+          <SearchBar defaultValue={params.search} />
+          <FilterBar priority={params.priority} completed={params.completed} />
         </div>
-      </main>
-    </div>
+      </div>
+
+      {/* Daftar Tugas & Paginasi */}
+      <div className="bg-slate-50/50 p-4 sm:p-6 rounded-2xl border border-slate-100">
+        <TaskList tasks={tasks} />
+        <Pagination currentPage={page} totalPages={totalPages} />
+      </div>
+    </main>
   );
 }
