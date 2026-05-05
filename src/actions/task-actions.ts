@@ -68,6 +68,16 @@ export async function deleteTask(id: string) {
 // 4. Fungsi Update (Edit)
 export async function updateTask(id: string, data: { title: string; description: string; priority: string }) {
   const user = await requireAuth();
-  await db.task.updateMany({ where: { id: id, userId: user.id }, data });
+  await db.task.updateMany({ 
+    where: { 
+      id: id, 
+      userId: user.id as string // Kita amankan juga userId-nya di sini
+    }, 
+    data: {
+      title: data.title,
+      description: data.description,
+      priority: data.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT" // Paksa TypeScript percaya ini sesuai format
+    } 
+  });
   revalidatePath("/");
 }
