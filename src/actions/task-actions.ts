@@ -35,8 +35,8 @@ export async function createTask(prevState: any, formData: FormData) {
         title: validation.data.title,
         description: validation.data.description,
         priority: validation.data.priority,
-        attachmentUrl: validation.data.attachmentUrl || null, // Pastikan jadi null kalau tidak ada gambar
-        userId: user.id, 
+        attachmentUrl: validation.data.attachmentUrl || null,
+        userId: user.id as string, // <--- TAMBAHKAN 'as string' DI SINI
       },
     });
     
