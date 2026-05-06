@@ -36,7 +36,7 @@ export default async function Home({ searchParams }: PageProps) {
       ],
     }),
     ...(params.priority && { priority: params.priority }),
-    ...(params.completed !== undefined && { completed: params.completed === "true" }),
+    ...(params.priority && { priority: params.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT" }),
   };
 
   // 4. Ambil data tugas & total jumlah tugas secara paralel (Lebih Cepat!)
