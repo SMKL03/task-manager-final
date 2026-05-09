@@ -14,6 +14,8 @@ export default function TaskForm() {
     errors: null, success: false 
   });
 
+  const errors = state.errors as Record<string, string[]> | null;
+
   useEffect(() => {
     if (state.success) {
       showToast("Tugas baru berhasil ditambahkan!", "success");
@@ -21,10 +23,10 @@ export default function TaskForm() {
       setAttachmentUrl(""); 
     }
     
-    if (state.errors?._form) {
-      showToast(state.errors._form[0], "error");
+    if (errors?._form) {
+      showToast(errors._form[0], "error");
     }
-  }, [state.success, state.errors]);
+  }, [state.success, errors]);
   
   return (
     <form ref={formRef} action={action} className="p-6 sm:p-8 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 rounded-2xl space-y-5">
@@ -40,9 +42,9 @@ export default function TaskForm() {
             placeholder="Apa yang ingin Anda capai hari ini?" 
             className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" 
           />
-          {state.errors?.title && (
+          {errors?.title && (
             <p className="text-red-500 text-sm font-medium mt-1.5 flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4" /> {state.errors.title[0]}
+              <AlertCircle className="w-4 h-4" /> {errors.title[0]}
             </p>
           )}
         </div>

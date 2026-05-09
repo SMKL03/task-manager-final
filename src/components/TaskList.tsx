@@ -119,7 +119,7 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
         <EditTaskModal task={editingTask} onClose={() => setEditingTask(null)} />
       )}
       {deletingTask && (
-        <DeleteConfirmModal task={deletingTask} onClose={() => setDeletingTask(null)} />
+        <DeleteConfirmModal taskId={deletingTask.id} onClose={() => setDeletingTask(null)} />
       )}
     </div>
   );

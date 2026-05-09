@@ -46,7 +46,9 @@ export default async function Home({ searchParams }: PageProps) {
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * perPage,
       take: perPage,
-  }),
+    }),
+    db.task.count({ where: where as any }),
+  ]);
 
   const totalPages = Math.ceil(totalTasks / perPage);
 
